@@ -1,10 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { OrderService } from '../../service/order.service';
-import { debounceTime } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, Observable, startWith, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule, RouterOutlet } from '@angular/router';
+import { Order } from '../../model/models';
 
 @Component({
   selector: 'app-orders-list',
@@ -14,42 +15,35 @@ import { RouterModule, RouterOutlet } from '@angular/router';
   styleUrl: './orders-list.component.css',
 })
 export class OrdersListComponent {
-  orders: any[] = [];
-  filteredOrders: any[] = [];
+  private orderService = inject(OrderService);
+  
   searchControl = new FormControl('');
+  
+  private orders$ = this.orderService.getOrders();
 
-  constructor(private orderService: OrderService, private fb: FormBuilder) {}
+  filteredOrders$: Observable<Order[]> = this.searchControl.valueChanges.pipe(
+    startWith(''),
+    debounceTime(300),
+    distinctUntilChanged(),
+    map(term => term || ''),
+    switchMap(searchTerm => 
+      this.orders$.pipe(
+        map(orders => this.filterOrders(orders, searchTerm))
+      )
+    )
+  );
 
   ngOnInit(): void {
-    this.loadOrders();
-
-    this.searchControl.valueChanges
-      .pipe(debounceTime(300))
-      .subscribe((value) => this.filterOrders(value ?? ''));
+    // No need for initialization since we're using startWith('')
   }
 
-  loadOrders() {
-    this.orderService.getOrders().subscribe(
-      (orders) => {
-        this.orders = orders;
-        this.filteredOrders = orders;
-      },
-      (error) => {
-        console.error('Error loading orders:', error);
-      }
+  private filterOrders(orders: Order[], searchTerm: string): Order[] {
+    if (!searchTerm) return orders;
+    
+    const term = searchTerm.toLowerCase();
+    return orders.filter(order =>
+      order.customerName.toLowerCase().includes(term) ||
+      order.email.toLowerCase().includes(term)
     );
-  }
-
-  filterOrders(searchTerm: string) {
-    if (!searchTerm) {
-      this.filteredOrders = this.orders;
-    } else {
-      const lowerSearchTerm = searchTerm.toLowerCase();
-      this.filteredOrders = this.orders.filter(
-        (order) =>
-          order.customerName.toLowerCase().includes(lowerSearchTerm) ||
-          order.email.toLowerCase().includes(lowerSearchTerm)
-      );
-    }
   }
 }

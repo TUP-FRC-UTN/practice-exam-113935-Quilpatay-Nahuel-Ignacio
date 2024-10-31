@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import {
   AbstractControl,
   FormArray,
@@ -22,14 +22,14 @@ import { Router } from '@angular/router';
   styleUrl: './create-order.component.css',
 })
 export class CreateOrderComponent {
+  private fb = inject(FormBuilder);
+  private orderService = inject(OrderService);
+  private router = inject(Router);
+
   orderForm: FormGroup;
   products: any[] = [];
 
-  constructor(
-    private fb: FormBuilder,
-    private orderService: OrderService,
-    private router: Router
-  ) {
+  constructor() {
     this.orderForm = this.fb.group({
       customerName: ['', [Validators.required, Validators.minLength(3)]],
       email: [

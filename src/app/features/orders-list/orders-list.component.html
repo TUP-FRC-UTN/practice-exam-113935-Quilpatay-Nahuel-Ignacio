@@ -1,7 +1,9 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="mb-0">Orders</h2>
-        <button class="btn btn-primary" [routerLink]="['/create-order']">Create New Order</button>
+        <button class="btn btn-primary" [routerLink]="['/create-order']">
+            Create New Order
+        </button>
     </div>
 
     <div class="mb-3">
@@ -21,7 +23,10 @@
             </tr>
         </thead>
         <tbody>
-            <tr *ngFor="let order of filteredOrders">
+            @if (filteredOrders$ | async; as orders) {
+            @if (orders.length) {
+            @for (order of orders; track order.orderCode) {
+            <tr>
                 <td>{{ order.orderCode }}</td>
                 <td>{{ order.customerName }}</td>
                 <td>{{ order.email }}</td>
@@ -29,9 +34,13 @@
                 <td>{{ order.timestamp | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ order.total | currency }}</td>
             </tr>
-            <tr *ngIf="filteredOrders.length === 0">
+            }
+            } @else {
+            <tr>
                 <td colspan="6" class="text-center">No orders found</td>
             </tr>
+            }
+            }
         </tbody>
     </table>
 </div>
